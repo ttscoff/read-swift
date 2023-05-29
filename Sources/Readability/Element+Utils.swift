@@ -134,3 +134,16 @@ public extension Element {
         }
     }
 }
+
+internal extension Element {
+    /// Reverts P elements with class `readability-styled` to text nodes - which is what they were before.
+    func revertReadabilityStyledElements() throws {
+        guard let owner = ownerDocument() else {
+            return
+        }
+
+        for element in try select("p.readability-styled").array() {
+            try element.parent()?.replaceChild(owner.appendText(element.text()), element)
+        }
+    }
+}

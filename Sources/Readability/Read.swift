@@ -676,23 +676,6 @@ public class Readability {
     }
 
     /**
-     * Reverts P elements with class "readability-styled"
-     * to text nodes - which is what they were before.
-     *
-     * @param DOMElement
-     * @return void
-     */
-    func revertReadabilityStyledElements(_ articleContent: Element) {
-        let elems = try! articleContent.select("p.readability-styled").array()
-
-        // $elems = $articleContent->getElementsByTagName("p");
-
-        for e in elems {
-            try! e.parent()?.replaceChild((articleContent.ownerDocument()?.appendText(e.text()))!, e)
-        }
-    }
-
-    /**
      * Prepare the article node for display. Clean out any inline styles,
      * iframes, forms, strip extraneous <p> tags, etc.
      *
@@ -704,7 +687,7 @@ public class Readability {
         killBreaks(articleContent)
 
         if revertForcedParagraphElements {
-            revertReadabilityStyledElements(articleContent)
+            try! articleContent.revertReadabilityStyledElements()
         }
 
         /* Clean out junk from the article content */
