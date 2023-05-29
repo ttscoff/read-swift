@@ -700,7 +700,7 @@ public class Readability {
      * @return void
      */
     public func prepArticle(_ articleContent: Element) {
-        cleanStyles(articleContent)
+        try! articleContent.cleanStyles()
         killBreaks(articleContent)
 
         if revertForcedParagraphElements {
@@ -1120,20 +1120,6 @@ public class Readability {
 
         for script in noscripts {
             try! script.parent()?.removeChild(script)
-        }
-    }
-
-    /**
-     * Remove the style attribute on every $e and under.
-     *
-     * @param DOMElement $e
-     * @return void
-     */
-    public func cleanStyles(_ e: Element) {
-        let elems = try! e.getAllElements().array()
-
-        for elem in elems {
-            try! elem.removeAttr("style")
         }
     }
 

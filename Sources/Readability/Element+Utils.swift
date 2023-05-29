@@ -31,4 +31,11 @@ public extension Element {
     func getCharCount(s: String = ",") throws -> Int {
         try getInnerText().rangesOfString(s: s).count
     }
+
+    /// Removes the style attribute.
+    func cleanStyles() throws {
+        try getAllElements().array().forEach {
+            try $0.removeAttr("style")
+        }
+    }
 }
