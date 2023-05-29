@@ -709,18 +709,18 @@ public class Readability {
 
         /* Clean out junk from the article content */
         cleanConditionally(articleContent, tag: "form")
-        clean(articleContent, tag: "object")
-        clean(articleContent, tag: "h1")
+        try! articleContent.clean(tag: "object")
+        try! articleContent.clean(tag: "h1")
 
         /**
          * If there is only one h2, they are probably using it
          * as a header and not a subheader, so remove it since we already have a header.
          ***/
         if !lightClean && (try! articleContent.getElementsByTag("h2").array().count == 1) {
-            clean(articleContent, tag: "h2")
+            try! articleContent.clean(tag: "h2")
         }
 
-        clean(articleContent, tag: "iframe")
+        try! articleContent.clean(tag: "iframe")
 
         try! articleContent.cleanHeaders(getClassWeight: flagIsActive(flag: FLAG_WEIGHT_CLASSES))
 
@@ -1137,44 +1137,6 @@ public class Readability {
         html = html.replacingOccurrences(of: RegEx.killBreaks, with: "<br />")
 
         try! node.html(html)
-    }
-
-    /**
-     * Clean a node of all elements of type "tag".
-     * (Unless it's a youtube/vimeo video. People love movies.)
-     *
-     * Updated 2012-09-18 to preserve youtube/vimeo iframes
-     *
-     * @param DOMElement $e
-     * @param string $tag
-     * @return void
-     */
-    public func clean(_ e: Element, tag: String) {
-        let targetList = try! e.getElementsByTag(tag).array()
-        let isEmbed = (tag == "iframe" || tag == "object" || tag == "embed")
-
-        for y in targetList {
-            /* Allow youtube and vimeo videos through as people usually want to see those. */
-            if isEmbed {
-                var attributeValues = ""
-
-                for il in y.getAttributes()! {
-                    attributeValues = il.getValue() + "|" // DOMAttr?
-                }
-
-                /* First, check the elements attributes to see if any of them contain youtube or vimeo */
-                if attributeValues.matches(RegEx.video) {
-                    continue
-                }
-
-                /* Then check the elements inside this element for the same. */
-                if try! y.html().matches(RegEx.video) {
-                    continue
-                }
-            }
-
-            try! y.parent()?.removeChild(y)
-        }
     }
 
     /**
