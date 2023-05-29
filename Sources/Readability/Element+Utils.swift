@@ -38,4 +38,23 @@ public extension Element {
             try $0.removeAttr("style")
         }
     }
+
+    /// Returns the density of links as a percentage of content.
+    ///
+    /// This is the amount of text that is inside a link divided by the total text in the node.
+    func getLinkDensity() throws -> Float {
+        let links = try getElementsByTag("a")
+        let textLength = try getInnerText().count
+        var linkLength = 0
+
+        for link in links {
+            linkLength += try link.getInnerText().count
+        }
+
+        if textLength > 0 {
+            return Float(linkLength / textLength)
+        } else {
+            return 0
+        }
+    }
 }

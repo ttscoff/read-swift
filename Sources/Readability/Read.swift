@@ -947,7 +947,7 @@ public class Readability {
              **/
             let readability = try! cl.attr("readability")
 
-            let value = Float(readability)! * (1 - getLinkDensity(cl))
+            let value = Float(readability)! * (1 - (try! cl.getLinkDensity()))
 
             try! cl.attr("readability", String(value))
 
@@ -1021,7 +1021,7 @@ public class Readability {
             }
 
             if siblingNode.nodeName().uppercased() == "P" {
-                let linkDensity = getLinkDensity(siblingNode as! Element)
+                let linkDensity = try! (siblingNode as! Element).getLinkDensity()
                 let nodeContent = try! (siblingNode as! Element).getInnerText()
                 let nodeLength = nodeContent.count
 
@@ -1120,29 +1120,6 @@ public class Readability {
 
         for script in noscripts {
             try! script.parent()?.removeChild(script)
-        }
-    }
-
-    /**
-     * Get the density of links as a percentage of the content
-     * This is the amount of text that is inside a link divided by the total text in the node.
-     *
-     * @param DOMElement $e
-     * @return number (float)
-     */
-    public func getLinkDensity(_ e: Element) -> Float {
-        let links = try! e.getElementsByTag("a")
-        let textLength = try! e.getInnerText().count
-        var linkLength = 0
-
-        for link in links {
-            linkLength += try! link.getInnerText().count
-        }
-
-        if textLength > 0 {
-            return Float(linkLength / textLength)
-        } else {
-            return 0
         }
     }
 
@@ -1296,7 +1273,7 @@ public class Readability {
                     }
                 }
 
-                let linkDensity = getLinkDensity(tag)
+                let linkDensity = try! tag.getLinkDensity()
                 let contentLength = try! tag.getInnerText().count
                 var toRemove = false
 
@@ -1384,7 +1361,7 @@ public class Readability {
             let headers = try! e.getElementsByTag("h\(headerIndex)").array()
 
             for header in headers {
-                if getClassWeight(header) < 0 || getLinkDensity(header) > 0.33 {
+                if (try! header.getClassWeight()) < 0 || (try! header.getLinkDensity()) > 0.33 {
                     try! header.parent()?.removeChild(header)
                 }
             }
