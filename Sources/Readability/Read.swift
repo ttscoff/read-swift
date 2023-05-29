@@ -722,7 +722,7 @@ public class Readability {
 
         clean(articleContent, tag: "iframe")
 
-        cleanHeaders(articleContent)
+        try! articleContent.cleanHeaders(getClassWeight: flagIsActive(flag: FLAG_WEIGHT_CLASSES))
 
         /* Do these last as the previous stuff may have removed junk that will affect these */
         cleanConditionally(articleContent, tag: "table")
@@ -1308,25 +1308,6 @@ public class Readability {
 
                 if toRemove {
                     try! tag.parent()?.removeChild(tag)
-                }
-            }
-        }
-    }
-
-    /**
-     * Clean out spurious headers from an Element. Checks things like classnames and link density.
-     *
-     * @param DOMElement $e
-     * @return void
-     */
-    public func cleanHeaders(_ e: Element) {
-        for headerIndex in 1 ... 2 {
-            let headers = try! e.getElementsByTag("h\(headerIndex)").array()
-
-            for header in headers {
-                let classWeight = flagIsActive(flag: FLAG_WEIGHT_CLASSES) ? try! header.getClassWeight() : 0
-                if classWeight < 0 || (try! header.getLinkDensity()) > 0.33 {
-                    try! header.parent()?.removeChild(header)
                 }
             }
         }

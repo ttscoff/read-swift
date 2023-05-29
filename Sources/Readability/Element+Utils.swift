@@ -88,4 +88,20 @@ public extension Element {
 
         return weight
     }
+
+    /// Clean out spurious headers from an Element. Checks things like classnames and link density.
+    ///
+    /// - Parameter getClassWeight: A Boolean value indicated whether class weights should be calculated.
+    func cleanHeaders(getClassWeight: Bool) throws {
+        for headerIndex in 1 ... 2 {
+            for header in try getElementsByTag("h\(headerIndex)").array()  {
+                let classWeight = getClassWeight ? try header.getClassWeight() : 0
+                let linkDensity = try header.getLinkDensity()
+
+                if classWeight < 0 || linkDensity > 0.33 {
+                    try header.parent()?.removeChild(header)
+                }
+            }
+        }
+    }
 }
