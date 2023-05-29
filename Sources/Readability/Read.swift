@@ -1270,3 +1270,87 @@ public class Readability {
         flags = flags & ~flag
     }
 }
+
+public extension Readability {
+    /**
+     * Get the inner text of a node.
+     * This also strips out any excess whitespace to be found.
+     *
+     * @param DOMElement $
+     * @param boolean $normalizeSpaces (default: true)
+     * @return string
+     **/
+    func getInnerText(_ e: Element, normalizeSpaces: Bool = true) -> String {
+        try! e.getInnerText(normalizeSpaces: normalizeSpaces)
+    }
+
+    /**
+     * Get the number of times a string $s appears in the node $e.
+     *
+     * @param DOMElement $e
+     * @param string - what to count. Default is ","
+     * @return number (integer)
+     **/
+    func getCharCount(_ e: Element, s: String = ",") -> Int {
+        try! e.getInnerText().rangesOfString(s: s).count
+    }
+
+    /**
+     * Remove the style attribute on every $e and under.
+     *
+     * @param DOMElement $e
+     * @return void
+     */
+    func cleanStyles(_ e: Element) {
+        try! e.cleanStyles()
+    }
+
+    /**
+     * Get the density of links as a percentage of the content
+     * This is the amount of text that is inside a link divided by the total text in the node.
+     *
+     * @param DOMElement $e
+     * @return number (float)
+     */
+    func getLinkDensity(_ e: Element) -> Float {
+        try! e.getLinkDensity()
+    }
+
+    /**
+     * Get an elements class/id weight. Uses regular expressions to tell if this
+     * element looks good or bad.
+     *
+     * @param DOMElement $e
+     * @return number (Integer)
+     */
+    func getClassWeight(_ e: Element) -> Int {
+        if !flagIsActive(flag: FLAG_WEIGHT_CLASSES) {
+            return 0
+        }
+        return try! e.getClassWeight()
+    }
+
+    /**
+     * Clean a node of all elements of type "tag".
+     * (Unless it's a youtube/vimeo video. People love movies.)
+     *
+     * Updated 2012-09-18 to preserve youtube/vimeo iframes
+     *
+     * @param DOMElement $e
+     * @param string $tag
+     * @return void
+     */
+    func clean(_ e: Element, tag: String) {
+        try! e.clean(tag: tag)
+    }
+
+    /**
+     * Clean out spurious headers from an Element. Checks things like classnames and link density.
+     *
+     * @param DOMElement $e
+     * @return void
+     */
+    func cleanHeaders(_ e: Element) {
+        try! e.cleanHeaders(getClassWeight: flagIsActive(flag: FLAG_WEIGHT_CLASSES))
+    }
+}
