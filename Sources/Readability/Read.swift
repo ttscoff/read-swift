@@ -81,23 +81,6 @@ public class Readability {
     private var success = false // indicates whether we were able to extract or not
 
     /**
-     * All of the regular expressions in use within readability.
-     * Defined up here so we don't instantiate them repeatedly in loops.
-     **/
-    public var regexps = [
-        "unlikelyCandidates": "/combx|comment|community|disqus|extra|header|menu|remark|rss|shoutbox|sidebar|sponsor|ad-break|agegate|pagination|pager|popup/i",
-        "okMaybeItsACandidate": "/and|article|body|column|main|shadow|instapaper_body|post/i",
-        "positive": "/article|body|content|entry|hentry|main|page|attachment|pagination|post|text|footnote|blog|story/i",
-        "negative": "/combx|comment|com-|contact|foot|footer|_nav|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/i",
-        "divToPElements": "/<(a|blockquote|dl|div|img|ol|p|pre|table|ul)/i",
-        "replaceBrs": "/(<br[^>]*>[ \\n\\r\\t]*){2,}/i",
-        "replaceFonts": "/<(/?)font[^>]*>/i",
-        "normalize": "/\\s{2,}/",
-        "killBreaks": "/(<br\\s*/?>(\\s|&nbsp;?)*){1,}/",
-        "video": "///(player\\.|www\\.)?(youtube\\.com|vimeo\\.com|viddler\\.com|twitch\\.tv)/i",
-    ]
-
-    /**
      * Create instance of Readability
      * @param string UTF-8 encoded string
      * @param string (optional) URL associated with HTML (used for footnotes)
@@ -111,8 +94,8 @@ public class Readability {
         self.html = html.replacingOccurrences(of: #"<span[^>]*?>([\n\t ]+)</span>"#, with: "$1", options: .regularExpression)
 
         /* Turn all double <br>s into <p>s */
-        self.html = self.html.replacingOccurrences(of: regexps["replaceBrs"]!, with: "</p><p>")
-        self.html = self.html.replacingOccurrences(of: regexps["replaceFonts"]!, with: "<$1span>")
+        self.html = self.html.replacingOccurrences(of: RegEx.replaceBrs, with: "</p><p>")
+        self.html = self.html.replacingOccurrences(of: RegEx.replaceFonts, with: "<$1span>")
 
         if self.html.trimmingCharacters(in: .whitespacesAndNewlines) == "" {
             self.html = "<html></html>"
@@ -842,7 +825,7 @@ public class Readability {
             if stripUnlikelyCandidates {
                 let unlikelyMatchString = try! node.attr("class") + node.attr("id")
 
-                if unlikelyMatchString.matches(regexps["unlikelyCandidates"]!) && !unlikelyMatchString.matches(regexps["okMaybeItsACandidate"]!) && tagName != "BODY" {
+                if unlikelyMatchString.matches(RegEx.unlikelyCandidates) && !unlikelyMatchString.matches(RegEx.okMaybeItsACandidate) && tagName != "BODY" {
                     dbg(msg: "Removing unlikely candidate - \(unlikelyMatchString)")
 
                     try! node.parent()?.removeChild(node)
@@ -857,7 +840,7 @@ public class Readability {
 
             /* Turn all divs that don"t have children block level elements into p"s */
             if tagName == "DIV" {
-                if !((try! node.html()).matches(regexps["divToPElements"]!)) {
+                if !((try! node.html()).matches(RegEx.divToPElements)) {
                     let newNode = try! dom.createElement("p")
 
                     do {
@@ -1158,7 +1141,7 @@ public class Readability {
         textContent = try! e.text().trimmingCharacters(in: .whitespacesAndNewlines)
 
         if normalizeSpaces {
-            return textContent.replacingOccurrences(of: regexps["normalize"]!, with: " ")
+            return textContent.replacingOccurrences(of: RegEx.normalize, with: " ")
         } else {
             return textContent
         }
@@ -1228,22 +1211,22 @@ public class Readability {
 
         /* Look for a special classname */
         if try! e.hasAttr("class") && e.attr("class") != "" {
-            if try! e.attr("class").matches(regexps["negative"]!) {
+            if try! e.attr("class").matches(RegEx.negative) {
                 weight -= 25
             }
 
-            if try! e.attr("class").matches(regexps["positive"]!) {
+            if try! e.attr("class").matches(RegEx.positive) {
                 weight += 25
             }
         }
 
         /* Look for a special ID */
         if try! e.hasAttr("id") && e.attr("id") != "" {
-            if try! e.attr("id").matches(regexps["negative"]!) {
+            if try! e.attr("id").matches(RegEx.negative) {
                 weight -= 25
             }
 
-            if try! e.attr("id").matches(regexps["positive"]!) {
+            if try! e.attr("id").matches(RegEx.positive) {
                 weight += 25
             }
         }
@@ -1260,7 +1243,7 @@ public class Readability {
     public func killBreaks(_ node: Element) {
         html = try! node.html()
 
-        html = html.replacingOccurrences(of: regexps["killBreaks"]!, with: "<br />")
+        html = html.replacingOccurrences(of: RegEx.killBreaks, with: "<br />")
 
         try! node.html(html)
     }
@@ -1289,12 +1272,12 @@ public class Readability {
                 }
 
                 /* First, check the elements attributes to see if any of them contain youtube or vimeo */
-                if attributeValues.matches(regexps["video"]!) {
+                if attributeValues.matches(RegEx.video) {
                     continue
                 }
 
                 /* Then check the elements inside this element for the same. */
-                if try! y.html().matches(regexps["video"]!) {
+                if try! y.html().matches(RegEx.video) {
                     continue
                 }
             }
@@ -1349,7 +1332,7 @@ public class Readability {
                 var embeds = try! tag.getElementsByTag("embed").array()
 
                 for embed in embeds {
-                    if try! embed.attr("src").matches(regexps["video"]!) {
+                    if try! embed.attr("src").matches(RegEx.video) {
                         embedCount += 1
                     }
                 }
@@ -1357,7 +1340,7 @@ public class Readability {
                 embeds = try! tag.getElementsByTag("iframe").array()
 
                 for iframe in embeds {
-                    if try! iframe.attr("src").matches(regexps["video"]!) {
+                    if try! iframe.attr("src").matches(RegEx.video) {
                         embedCount += 1
                     }
                 }
