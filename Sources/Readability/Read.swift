@@ -784,7 +784,9 @@ public class Readability {
             break
         }
 
-        contentScore += getClassWeight(node)
+        if flagIsActive(flag: FLAG_WEIGHT_CLASSES) {
+            contentScore += try! node.getClassWeight()
+        }
 
         try! node.attr("readability", "\(contentScore)")
     }
@@ -1124,45 +1126,6 @@ public class Readability {
     }
 
     /**
-     * Get an elements class/id weight. Uses regular expressions to tell if this
-     * element looks good or bad.
-     *
-     * @param DOMElement $e
-     * @return number (Integer)
-     */
-    public func getClassWeight(_ e: Element) -> Int {
-        if !flagIsActive(flag: FLAG_WEIGHT_CLASSES) {
-            return 0
-        }
-
-        var weight = 0
-
-        /* Look for a special classname */
-        if try! e.hasAttr("class") && e.attr("class") != "" {
-            if try! e.attr("class").matches(RegEx.negative) {
-                weight -= 25
-            }
-
-            if try! e.attr("class").matches(RegEx.positive) {
-                weight += 25
-            }
-        }
-
-        /* Look for a special ID */
-        if try! e.hasAttr("id") && e.attr("id") != "" {
-            if try! e.attr("id").matches(RegEx.negative) {
-                weight -= 25
-            }
-
-            if try! e.attr("id").matches(RegEx.positive) {
-                weight += 25
-            }
-        }
-
-        return weight
-    }
-
-    /**
      * Remove extraneous break tags from a node.
      *
      * @param DOMElement $node
@@ -1237,7 +1200,7 @@ public class Readability {
          * TODO: Consider taking into account original contentScore here.
          */
         for tag in tagsList {
-            let weight = getClassWeight(tag)
+            let weight = flagIsActive(flag: FLAG_WEIGHT_CLASSES) ? try! tag.getClassWeight() : 0
 
             let contentScore = (tag.hasAttr("readability")) ? try! Int(Float(tag.attr("readability"))!) : 0
 
@@ -1361,7 +1324,8 @@ public class Readability {
             let headers = try! e.getElementsByTag("h\(headerIndex)").array()
 
             for header in headers {
-                if (try! header.getClassWeight()) < 0 || (try! header.getLinkDensity()) > 0.33 {
+                let classWeight = flagIsActive(flag: FLAG_WEIGHT_CLASSES) ? try! header.getClassWeight() : 0
+                if classWeight < 0 || (try! header.getLinkDensity()) > 0.33 {
                     try! header.parent()?.removeChild(header)
                 }
             }

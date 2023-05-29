@@ -57,4 +57,35 @@ public extension Element {
             return 0
         }
     }
+
+    /// Returns the element's class/id weight.
+    ///
+    /// Uses regular expressions to tell if this element looks good or bad.
+    func getClassWeight() throws -> Int {
+        var weight = 0
+
+        // Look for a special classname
+        if try hasAttr("class") && attr("class") != "" {
+            if try attr("class").matches(RegEx.negative) {
+                weight -= 25
+            }
+
+            if try attr("class").matches(RegEx.positive) {
+                weight += 25
+            }
+        }
+
+        // Look for a special ID
+        if try hasAttr("id") && attr("id") != "" {
+            if try attr("id").matches(RegEx.negative) {
+                weight -= 25
+            }
+
+            if try attr("id").matches(RegEx.positive) {
+                weight += 25
+            }
+        }
+
+        return weight
+    }
 }
