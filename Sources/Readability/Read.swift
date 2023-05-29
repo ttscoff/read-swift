@@ -81,23 +81,6 @@ public class Readability {
     private var success = false // indicates whether we were able to extract or not
 
     /**
-     * All of the regular expressions in use within readability.
-     * Defined up here so we don't instantiate them repeatedly in loops.
-     **/
-    public var regexps = [
-        "unlikelyCandidates": "/combx|comment|community|disqus|extra|header|menu|remark|rss|shoutbox|sidebar|sponsor|ad-break|agegate|pagination|pager|popup/i",
-        "okMaybeItsACandidate": "/and|article|body|column|main|shadow|instapaper_body|post/i",
-        "positive": "/article|body|content|entry|hentry|main|page|attachment|pagination|post|text|footnote|blog|story/i",
-        "negative": "/combx|comment|com-|contact|foot|footer|_nav|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/i",
-        "divToPElements": "/<(a|blockquote|dl|div|img|ol|p|pre|table|ul)/i",
-        "replaceBrs": "/(<br[^>]*>[ \\n\\r\\t]*){2,}/i",
-        "replaceFonts": "/<(/?)font[^>]*>/i",
-        "normalize": "/\\s{2,}/",
-        "killBreaks": "/(<br\\s*/?>(\\s|&nbsp;?)*){1,}/",
-        "video": "///(player\\.|www\\.)?(youtube\\.com|vimeo\\.com|viddler\\.com|twitch\\.tv)/i",
-    ]
-
-    /**
      * Create instance of Readability
      * @param string UTF-8 encoded string
      * @param string (optional) URL associated with HTML (used for footnotes)
@@ -111,8 +94,8 @@ public class Readability {
         self.html = html.replacingOccurrences(of: #"<span[^>]*?>([\n\t ]+)</span>"#, with: "$1", options: .regularExpression)
 
         /* Turn all double <br>s into <p>s */
-        self.html = self.html.replacingOccurrences(of: regexps["replaceBrs"]!, with: "</p><p>")
-        self.html = self.html.replacingOccurrences(of: regexps["replaceFonts"]!, with: "<$1span>")
+        self.html = self.html.replacingOccurrences(of: RegEx.replaceBrs, with: "</p><p>")
+        self.html = self.html.replacingOccurrences(of: RegEx.replaceFonts, with: "<$1span>")
 
         if self.html.trimmingCharacters(in: .whitespacesAndNewlines) == "" {
             self.html = "<html></html>"
@@ -161,7 +144,7 @@ public class Readability {
         var articleContent = try! dom.createElement("div")
 
         let main = try! dom.getElementsByClass("inner-content").first()!
-        let title = getInnerText(try! main.select("#question-header h1 a.question-hyperlink").first()!)
+        let title = try! main.select("#question-header h1 a.question-hyperlink").first()!.getInnerText()
 
         let articleTitleh1 = try! dom.createElement("h1")
         try! articleTitleh1.text(title)
@@ -180,7 +163,7 @@ public class Readability {
         let answersTitleEl = try! answersDiv.select("#answers-header .answers-subheader h2").first()!
         let extraSpan = try! answersTitleEl.select("span").last()!
         try! extraSpan.remove()
-        let answersTitle = getInnerText(answersTitleEl)
+        let answersTitle = try! answersTitleEl.getInnerText()
         let acceptedAnswer = try! answersDiv.select(".answer.accepted-answer")
 
         let otherAnswers = try! answersDiv.select(".answer").not(".accepted-answer").array()
@@ -220,7 +203,7 @@ public class Readability {
             }
         }
 
-        if getInnerText(articleContent) == "" {
+        if try! articleContent.getInnerText() == "" {
             success = false
 
             articleContent = try! dom.createElement("div")
@@ -286,7 +269,7 @@ public class Readability {
 
         let main = try! dom.select("#main-content .page").first()!
         let question = try! main.select("#question-container").first()!
-        let title = getInnerText(try! question.select(".header h1.title").first()!)
+        let title = try! question.select(".header h1.title").first()!.getInnerText()
 
         let articleTitleh1 = try! dom.createElement("h1")
         try! articleTitleh1.text(title)
@@ -307,7 +290,7 @@ public class Readability {
             }
         }
 
-        if getInnerText(articleContent) == "" {
+        if try! articleContent.getInnerText() == "" {
             success = false
 
             articleContent = try! dom.createElement("div")
@@ -474,7 +457,7 @@ public class Readability {
             if h1s.count == 1 {
                 let h1 = h1s.first()!
                 let articleTitle = try! dom.createElement("h1")
-                try! articleTitle.text(getInnerText(h1))
+                try! articleTitle.text(h1.getInnerText())
                 self.articleTitle = articleTitle
             }
         }
@@ -509,7 +492,7 @@ public class Readability {
             if rougeTables.count > 0 {
                 for table in rougeTables {
                     let code = try table.getElementsByClass("rouge-code").array()[0]
-                    let content = try getInnerText(code.getElementsByTag("pre").array()[0])
+                    let content = try code.getElementsByTag("pre").array()[0].getInnerText()
                     let parent = table.parent()
                     try parent?.text(content)
                 }
@@ -530,7 +513,7 @@ public class Readability {
         do {
             let titleEls = try! dom.getElementsByTag("title")
             if titleEls.count > 0 {
-                origTitle = getInnerText(titleEls[0])
+                origTitle = try! titleEls[0].getInnerText()
             }
 
             curTitle = origTitle
@@ -563,9 +546,9 @@ public class Readability {
             let h1s = try! dom.getElementsByTag("h1")
             if h1s.count > 0 {
                 if h1s.count > 1 {
-                    origTitle = getInnerText(h1s[1])
+                    origTitle = try! h1s[1].getInnerText()
                 } else {
-                    origTitle = getInnerText(h1s.first()!)
+                    origTitle = try! h1s.first()!.getInnerText()
                 }
                 curTitle = origTitle.trimmingCharacters(in: .whitespacesAndNewlines)
                 articleTitle = try! dom.createElement("h1")
@@ -647,7 +630,7 @@ public class Readability {
                 // @parse_url(self.url, PHP_URL_HOST)
             }
 
-            let linkText = getInnerText(articleLink)
+            let linkText = try! articleLink.getInnerText()
 
             if try! articleLink.attr("class").range(of: "readability-DoNotFootnote") != nil {
                 continue
@@ -693,23 +676,6 @@ public class Readability {
     }
 
     /**
-     * Reverts P elements with class "readability-styled"
-     * to text nodes - which is what they were before.
-     *
-     * @param DOMElement
-     * @return void
-     */
-    func revertReadabilityStyledElements(_ articleContent: Element) {
-        let elems = try! articleContent.select("p.readability-styled").array()
-
-        // $elems = $articleContent->getElementsByTagName("p");
-
-        for e in elems {
-            try! e.parent()?.replaceChild((articleContent.ownerDocument()?.appendText(e.text()))!, e)
-        }
-    }
-
-    /**
      * Prepare the article node for display. Clean out any inline styles,
      * iframes, forms, strip extraneous <p> tags, etc.
      *
@@ -717,29 +683,29 @@ public class Readability {
      * @return void
      */
     public func prepArticle(_ articleContent: Element) {
-        cleanStyles(articleContent)
+        try! articleContent.cleanStyles()
         killBreaks(articleContent)
 
         if revertForcedParagraphElements {
-            revertReadabilityStyledElements(articleContent)
+            try! articleContent.revertReadabilityStyledElements()
         }
 
         /* Clean out junk from the article content */
         cleanConditionally(articleContent, tag: "form")
-        clean(articleContent, tag: "object")
-        clean(articleContent, tag: "h1")
+        try! articleContent.clean(tag: "object")
+        try! articleContent.clean(tag: "h1")
 
         /**
          * If there is only one h2, they are probably using it
          * as a header and not a subheader, so remove it since we already have a header.
          ***/
         if !lightClean && (try! articleContent.getElementsByTag("h2").array().count == 1) {
-            clean(articleContent, tag: "h2")
+            try! articleContent.clean(tag: "h2")
         }
 
-        clean(articleContent, tag: "iframe")
+        try! articleContent.clean(tag: "iframe")
 
-        cleanHeaders(articleContent)
+        try! articleContent.cleanHeaders(getClassWeight: flagIsActive(flag: FLAG_WEIGHT_CLASSES))
 
         /* Do these last as the previous stuff may have removed junk that will affect these */
         cleanConditionally(articleContent, tag: "table")
@@ -755,7 +721,7 @@ public class Readability {
             let objectCount = try! article.getElementsByTag("object").array().count
             let iframeCount = try! article.getElementsByTag("iframe").array().count
 
-            if imgCount == 0 && embedCount == 0 && objectCount == 0 && iframeCount == 0 && getInnerText(article, normalizeSpaces: false) == "" {
+            if imgCount == 0 && embedCount == 0 && objectCount == 0 && iframeCount == 0 && (try! article.getInnerText(normalizeSpaces: false)) == "" {
                 try! article.parent()?.removeChild(article)
             }
         }
@@ -801,7 +767,9 @@ public class Readability {
             break
         }
 
-        contentScore += getClassWeight(node)
+        if flagIsActive(flag: FLAG_WEIGHT_CLASSES) {
+            contentScore += try! node.getClassWeight()
+        }
 
         try! node.attr("readability", "\(contentScore)")
     }
@@ -842,7 +810,7 @@ public class Readability {
             if stripUnlikelyCandidates {
                 let unlikelyMatchString = try! node.attr("class") + node.attr("id")
 
-                if unlikelyMatchString.matches(regexps["unlikelyCandidates"]!) && !unlikelyMatchString.matches(regexps["okMaybeItsACandidate"]!) && tagName != "BODY" {
+                if unlikelyMatchString.matches(RegEx.unlikelyCandidates) && !unlikelyMatchString.matches(RegEx.okMaybeItsACandidate) && tagName != "BODY" {
                     dbg(msg: "Removing unlikely candidate - \(unlikelyMatchString)")
 
                     try! node.parent()?.removeChild(node)
@@ -857,7 +825,7 @@ public class Readability {
 
             /* Turn all divs that don"t have children block level elements into p"s */
             if tagName == "DIV" {
-                if !((try! node.html()).matches(regexps["divToPElements"]!)) {
+                if !((try! node.html()).matches(RegEx.divToPElements)) {
                     let newNode = try! dom.createElement("p")
 
                     do {
@@ -896,7 +864,7 @@ public class Readability {
             let parentNode = pt.parent()
             // $grandParentNode = $parentNode ? $parentNode->parentNode : null;
             let grandParentNode = parentNode == nil ? nil : parentNode!.parent()
-            let innerText = getInnerText(pt)
+            let innerText = try! pt.getInnerText()
 
             if parentNode == nil || parentNode!.tagName().isEmpty {
                 continue
@@ -964,7 +932,7 @@ public class Readability {
              **/
             let readability = try! cl.attr("readability")
 
-            let value = Float(readability)! * (1 - getLinkDensity(cl))
+            let value = Float(readability)! * (1 - (try! cl.getLinkDensity()))
 
             try! cl.attr("readability", String(value))
 
@@ -1038,8 +1006,8 @@ public class Readability {
             }
 
             if siblingNode.nodeName().uppercased() == "P" {
-                let linkDensity = getLinkDensity(siblingNode as! Element)
-                let nodeContent = getInnerText(siblingNode as! Element)
+                let linkDensity = try! (siblingNode as! Element).getLinkDensity()
+                let nodeContent = try! (siblingNode as! Element).getInnerText()
                 let nodeLength = nodeContent.count
 
                 if nodeLength > 80 && linkDensity < 0.25 {
@@ -1093,7 +1061,7 @@ public class Readability {
          * likelihood of finding the content, and the sieve approach gives us a higher likelihood of
          * finding the -right- content.
          **/
-        if getInnerText(articleContent, normalizeSpaces: false).count < 250 {
+        if try! articleContent.getInnerText(normalizeSpaces: false).count < 250 {
             // TODO: find out why element disappears sometimes, e.g. for this URL http://www.businessinsider.com/6-hedge-fund-etfs-for-average-investors-2011-7
             // in the meantime, we check and create an empty element if it's not there.
             if body?.getChildNodes() == nil {
@@ -1141,117 +1109,6 @@ public class Readability {
     }
 
     /**
-     * Get the inner text of a node.
-     * This also strips out any excess whitespace to be found.
-     *
-     * @param DOMElement $
-     * @param boolean $normalizeSpaces (default: true)
-     * @return string
-     **/
-    public func getInnerText(_ e: Element, normalizeSpaces: Bool = true) -> String {
-        var textContent = ""
-
-        if try! e.text() == "" {
-            return ""
-        }
-
-        textContent = try! e.text().trimmingCharacters(in: .whitespacesAndNewlines)
-
-        if normalizeSpaces {
-            return textContent.replacingOccurrences(of: regexps["normalize"]!, with: " ")
-        } else {
-            return textContent
-        }
-    }
-
-    /**
-     * Get the number of times a string $s appears in the node $e.
-     *
-     * @param DOMElement $e
-     * @param string - what to count. Default is ","
-     * @return number (integer)
-     **/
-    public func getCharCount(_ e: Element, s: String = ",") -> Int {
-        return getInnerText(e).rangesOfString(s: s).count
-    }
-
-    /**
-     * Remove the style attribute on every $e and under.
-     *
-     * @param DOMElement $e
-     * @return void
-     */
-    public func cleanStyles(_ e: Element) {
-        let elems = try! e.getAllElements().array()
-
-        for elem in elems {
-            try! elem.removeAttr("style")
-        }
-    }
-
-    /**
-     * Get the density of links as a percentage of the content
-     * This is the amount of text that is inside a link divided by the total text in the node.
-     *
-     * @param DOMElement $e
-     * @return number (float)
-     */
-    public func getLinkDensity(_ e: Element) -> Float {
-        let links = try! e.getElementsByTag("a")
-        let textLength = getInnerText(e).count
-        var linkLength = 0
-
-        for link in links {
-            linkLength += getInnerText(link).count
-        }
-
-        if textLength > 0 {
-            return Float(linkLength / textLength)
-        } else {
-            return 0
-        }
-    }
-
-    /**
-     * Get an elements class/id weight. Uses regular expressions to tell if this
-     * element looks good or bad.
-     *
-     * @param DOMElement $e
-     * @return number (Integer)
-     */
-    public func getClassWeight(_ e: Element) -> Int {
-        if !flagIsActive(flag: FLAG_WEIGHT_CLASSES) {
-            return 0
-        }
-
-        var weight = 0
-
-        /* Look for a special classname */
-        if try! e.hasAttr("class") && e.attr("class") != "" {
-            if try! e.attr("class").matches(regexps["negative"]!) {
-                weight -= 25
-            }
-
-            if try! e.attr("class").matches(regexps["positive"]!) {
-                weight += 25
-            }
-        }
-
-        /* Look for a special ID */
-        if try! e.hasAttr("id") && e.attr("id") != "" {
-            if try! e.attr("id").matches(regexps["negative"]!) {
-                weight -= 25
-            }
-
-            if try! e.attr("id").matches(regexps["positive"]!) {
-                weight += 25
-            }
-        }
-
-        return weight
-    }
-
-    /**
      * Remove extraneous break tags from a node.
      *
      * @param DOMElement $node
@@ -1260,47 +1117,9 @@ public class Readability {
     public func killBreaks(_ node: Element) {
         html = try! node.html()
 
-        html = html.replacingOccurrences(of: regexps["killBreaks"]!, with: "<br />")
+        html = html.replacingOccurrences(of: RegEx.killBreaks, with: "<br />")
 
         try! node.html(html)
-    }
-
-    /**
-     * Clean a node of all elements of type "tag".
-     * (Unless it's a youtube/vimeo video. People love movies.)
-     *
-     * Updated 2012-09-18 to preserve youtube/vimeo iframes
-     *
-     * @param DOMElement $e
-     * @param string $tag
-     * @return void
-     */
-    public func clean(_ e: Element, tag: String) {
-        let targetList = try! e.getElementsByTag(tag).array()
-        let isEmbed = (tag == "iframe" || tag == "object" || tag == "embed")
-
-        for y in targetList {
-            /* Allow youtube and vimeo videos through as people usually want to see those. */
-            if isEmbed {
-                var attributeValues = ""
-
-                for il in y.getAttributes()! {
-                    attributeValues = il.getValue() + "|" // DOMAttr?
-                }
-
-                /* First, check the elements attributes to see if any of them contain youtube or vimeo */
-                if attributeValues.matches(regexps["video"]!) {
-                    continue
-                }
-
-                /* Then check the elements inside this element for the same. */
-                if try! y.html().matches(regexps["video"]!) {
-                    continue
-                }
-            }
-
-            try! y.parent()?.removeChild(y)
-        }
     }
 
     /**
@@ -1326,7 +1145,7 @@ public class Readability {
          * TODO: Consider taking into account original contentScore here.
          */
         for tag in tagsList {
-            let weight = getClassWeight(tag)
+            let weight = flagIsActive(flag: FLAG_WEIGHT_CLASSES) ? try! tag.getClassWeight() : 0
 
             let contentScore = (tag.hasAttr("readability")) ? try! Int(Float(tag.attr("readability"))!) : 0
 
@@ -1334,7 +1153,7 @@ public class Readability {
 
             if weight + contentScore < 0 {
                 try! tag.parent()?.removeChild(tag)
-            } else if getCharCount(tag, s: ",") < 10 {
+            } else if try! tag.getCharCount(s: ",") < 10 {
                 /**
                  * If there are not very many commas, and the number of
                  * non-paragraph elements is more than paragraphs or other ominous signs, remove the element.
@@ -1349,7 +1168,7 @@ public class Readability {
                 var embeds = try! tag.getElementsByTag("embed").array()
 
                 for embed in embeds {
-                    if try! embed.attr("src").matches(regexps["video"]!) {
+                    if try! embed.attr("src").matches(RegEx.video) {
                         embedCount += 1
                     }
                 }
@@ -1357,13 +1176,13 @@ public class Readability {
                 embeds = try! tag.getElementsByTag("iframe").array()
 
                 for iframe in embeds {
-                    if try! iframe.attr("src").matches(regexps["video"]!) {
+                    if try! iframe.attr("src").matches(RegEx.video) {
                         embedCount += 1
                     }
                 }
 
-                let linkDensity = getLinkDensity(tag)
-                let contentLength = getInnerText(tag).count
+                let linkDensity = try! tag.getLinkDensity()
+                let contentLength = try! tag.getInnerText().count
                 var toRemove = false
 
                 if lightClean {
@@ -1439,24 +1258,6 @@ public class Readability {
         }
     }
 
-    /**
-     * Clean out spurious headers from an Element. Checks things like classnames and link density.
-     *
-     * @param DOMElement $e
-     * @return void
-     */
-    public func cleanHeaders(_ e: Element) {
-        for headerIndex in 1 ... 2 {
-            let headers = try! e.getElementsByTag("h\(headerIndex)").array()
-
-            for header in headers {
-                if getClassWeight(header) < 0 || getLinkDensity(header) > 0.33 {
-                    try! header.parent()?.removeChild(header)
-                }
-            }
-        }
-    }
-
     public func flagIsActive(flag: Int) -> Bool {
         return (flags & flag) > 0
     }
@@ -1467,5 +1268,89 @@ public class Readability {
 
     public func removeFlag(flag: Int) {
         flags = flags & ~flag
+    }
+}
+
+public extension Readability {
+    /**
+     * Get the inner text of a node.
+     * This also strips out any excess whitespace to be found.
+     *
+     * @param DOMElement $
+     * @param boolean $normalizeSpaces (default: true)
+     * @return string
+     **/
+    func getInnerText(_ e: Element, normalizeSpaces: Bool = true) -> String {
+        try! e.getInnerText(normalizeSpaces: normalizeSpaces)
+    }
+
+    /**
+     * Get the number of times a string $s appears in the node $e.
+     *
+     * @param DOMElement $e
+     * @param string - what to count. Default is ","
+     * @return number (integer)
+     **/
+    func getCharCount(_ e: Element, s: String = ",") -> Int {
+        try! e.getInnerText().rangesOfString(s: s).count
+    }
+
+    /**
+     * Remove the style attribute on every $e and under.
+     *
+     * @param DOMElement $e
+     * @return void
+     */
+    func cleanStyles(_ e: Element) {
+        try! e.cleanStyles()
+    }
+
+    /**
+     * Get the density of links as a percentage of the content
+     * This is the amount of text that is inside a link divided by the total text in the node.
+     *
+     * @param DOMElement $e
+     * @return number (float)
+     */
+    func getLinkDensity(_ e: Element) -> Float {
+        try! e.getLinkDensity()
+    }
+
+    /**
+     * Get an elements class/id weight. Uses regular expressions to tell if this
+     * element looks good or bad.
+     *
+     * @param DOMElement $e
+     * @return number (Integer)
+     */
+    func getClassWeight(_ e: Element) -> Int {
+        if !flagIsActive(flag: FLAG_WEIGHT_CLASSES) {
+            return 0
+        }
+        return try! e.getClassWeight()
+    }
+
+    /**
+     * Clean a node of all elements of type "tag".
+     * (Unless it's a youtube/vimeo video. People love movies.)
+     *
+     * Updated 2012-09-18 to preserve youtube/vimeo iframes
+     *
+     * @param DOMElement $e
+     * @param string $tag
+     * @return void
+     */
+    func clean(_ e: Element, tag: String) {
+        try! e.clean(tag: tag)
+    }
+
+    /**
+     * Clean out spurious headers from an Element. Checks things like classnames and link density.
+     *
+     * @param DOMElement $e
+     * @return void
+     */
+    func cleanHeaders(_ e: Element) {
+        try! e.cleanHeaders(getClassWeight: flagIsActive(flag: FLAG_WEIGHT_CLASSES))
     }
 }
