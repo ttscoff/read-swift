@@ -23,4 +23,12 @@ public extension Element {
             return textContent
         }
     }
+
+    /// Returns the number of times a given string appears.
+    ///
+    /// - Parameter s: The string to count.
+    /// - Returns: The number of times the given string appears.
+    func getCharCount(s: String = ",") throws -> Int {
+        try getInnerText().rangesOfString(s: s).count
+    }
 }

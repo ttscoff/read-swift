@@ -1124,17 +1124,6 @@ public class Readability {
     }
 
     /**
-     * Get the number of times a string $s appears in the node $e.
-     *
-     * @param DOMElement $e
-     * @param string - what to count. Default is ","
-     * @return number (integer)
-     **/
-    public func getCharCount(_ e: Element, s: String = ",") -> Int {
-        return try! e.getInnerText().rangesOfString(s: s).count
-    }
-
-    /**
      * Remove the style attribute on every $e and under.
      *
      * @param DOMElement $e
@@ -1293,7 +1282,7 @@ public class Readability {
 
             if weight + contentScore < 0 {
                 try! tag.parent()?.removeChild(tag)
-            } else if getCharCount(tag, s: ",") < 10 {
+            } else if try! tag.getCharCount(s: ",") < 10 {
                 /**
                  * If there are not very many commas, and the number of
                  * non-paragraph elements is more than paragraphs or other ominous signs, remove the element.
