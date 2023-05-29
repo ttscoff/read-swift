@@ -144,7 +144,7 @@ public class Readability {
         var articleContent = try! dom.createElement("div")
 
         let main = try! dom.getElementsByClass("inner-content").first()!
-        let title = getInnerText(try! main.select("#question-header h1 a.question-hyperlink").first()!)
+        let title = try! main.select("#question-header h1 a.question-hyperlink").first()!.getInnerText()
 
         let articleTitleh1 = try! dom.createElement("h1")
         try! articleTitleh1.text(title)
@@ -163,7 +163,7 @@ public class Readability {
         let answersTitleEl = try! answersDiv.select("#answers-header .answers-subheader h2").first()!
         let extraSpan = try! answersTitleEl.select("span").last()!
         try! extraSpan.remove()
-        let answersTitle = getInnerText(answersTitleEl)
+        let answersTitle = try! answersTitleEl.getInnerText()
         let acceptedAnswer = try! answersDiv.select(".answer.accepted-answer")
 
         let otherAnswers = try! answersDiv.select(".answer").not(".accepted-answer").array()
@@ -203,7 +203,7 @@ public class Readability {
             }
         }
 
-        if getInnerText(articleContent) == "" {
+        if try! articleContent.getInnerText() == "" {
             success = false
 
             articleContent = try! dom.createElement("div")
@@ -269,7 +269,7 @@ public class Readability {
 
         let main = try! dom.select("#main-content .page").first()!
         let question = try! main.select("#question-container").first()!
-        let title = getInnerText(try! question.select(".header h1.title").first()!)
+        let title = try! question.select(".header h1.title").first()!.getInnerText()
 
         let articleTitleh1 = try! dom.createElement("h1")
         try! articleTitleh1.text(title)
@@ -290,7 +290,7 @@ public class Readability {
             }
         }
 
-        if getInnerText(articleContent) == "" {
+        if try! articleContent.getInnerText() == "" {
             success = false
 
             articleContent = try! dom.createElement("div")
@@ -457,7 +457,7 @@ public class Readability {
             if h1s.count == 1 {
                 let h1 = h1s.first()!
                 let articleTitle = try! dom.createElement("h1")
-                try! articleTitle.text(getInnerText(h1))
+                try! articleTitle.text(h1.getInnerText())
                 self.articleTitle = articleTitle
             }
         }
@@ -492,7 +492,7 @@ public class Readability {
             if rougeTables.count > 0 {
                 for table in rougeTables {
                     let code = try table.getElementsByClass("rouge-code").array()[0]
-                    let content = try getInnerText(code.getElementsByTag("pre").array()[0])
+                    let content = try code.getElementsByTag("pre").array()[0].getInnerText()
                     let parent = table.parent()
                     try parent?.text(content)
                 }
@@ -513,7 +513,7 @@ public class Readability {
         do {
             let titleEls = try! dom.getElementsByTag("title")
             if titleEls.count > 0 {
-                origTitle = getInnerText(titleEls[0])
+                origTitle = try! titleEls[0].getInnerText()
             }
 
             curTitle = origTitle
@@ -546,9 +546,9 @@ public class Readability {
             let h1s = try! dom.getElementsByTag("h1")
             if h1s.count > 0 {
                 if h1s.count > 1 {
-                    origTitle = getInnerText(h1s[1])
+                    origTitle = try! h1s[1].getInnerText()
                 } else {
-                    origTitle = getInnerText(h1s.first()!)
+                    origTitle = try! h1s.first()!.getInnerText()
                 }
                 curTitle = origTitle.trimmingCharacters(in: .whitespacesAndNewlines)
                 articleTitle = try! dom.createElement("h1")
@@ -630,7 +630,7 @@ public class Readability {
                 // @parse_url(self.url, PHP_URL_HOST)
             }
 
-            let linkText = getInnerText(articleLink)
+            let linkText = try! articleLink.getInnerText()
 
             if try! articleLink.attr("class").range(of: "readability-DoNotFootnote") != nil {
                 continue
@@ -738,7 +738,7 @@ public class Readability {
             let objectCount = try! article.getElementsByTag("object").array().count
             let iframeCount = try! article.getElementsByTag("iframe").array().count
 
-            if imgCount == 0 && embedCount == 0 && objectCount == 0 && iframeCount == 0 && getInnerText(article, normalizeSpaces: false) == "" {
+            if imgCount == 0 && embedCount == 0 && objectCount == 0 && iframeCount == 0 && (try! article.getInnerText(normalizeSpaces: false)) == "" {
                 try! article.parent()?.removeChild(article)
             }
         }
@@ -879,7 +879,7 @@ public class Readability {
             let parentNode = pt.parent()
             // $grandParentNode = $parentNode ? $parentNode->parentNode : null;
             let grandParentNode = parentNode == nil ? nil : parentNode!.parent()
-            let innerText = getInnerText(pt)
+            let innerText = try! pt.getInnerText()
 
             if parentNode == nil || parentNode!.tagName().isEmpty {
                 continue
@@ -1022,7 +1022,7 @@ public class Readability {
 
             if siblingNode.nodeName().uppercased() == "P" {
                 let linkDensity = getLinkDensity(siblingNode as! Element)
-                let nodeContent = getInnerText(siblingNode as! Element)
+                let nodeContent = try! (siblingNode as! Element).getInnerText()
                 let nodeLength = nodeContent.count
 
                 if nodeLength > 80 && linkDensity < 0.25 {
@@ -1076,7 +1076,7 @@ public class Readability {
          * likelihood of finding the content, and the sieve approach gives us a higher likelihood of
          * finding the -right- content.
          **/
-        if getInnerText(articleContent, normalizeSpaces: false).count < 250 {
+        if try! articleContent.getInnerText(normalizeSpaces: false).count < 250 {
             // TODO: find out why element disappears sometimes, e.g. for this URL http://www.businessinsider.com/6-hedge-fund-etfs-for-average-investors-2011-7
             // in the meantime, we check and create an empty element if it's not there.
             if body?.getChildNodes() == nil {
@@ -1124,30 +1124,6 @@ public class Readability {
     }
 
     /**
-     * Get the inner text of a node.
-     * This also strips out any excess whitespace to be found.
-     *
-     * @param DOMElement $
-     * @param boolean $normalizeSpaces (default: true)
-     * @return string
-     **/
-    public func getInnerText(_ e: Element, normalizeSpaces: Bool = true) -> String {
-        var textContent = ""
-
-        if try! e.text() == "" {
-            return ""
-        }
-
-        textContent = try! e.text().trimmingCharacters(in: .whitespacesAndNewlines)
-
-        if normalizeSpaces {
-            return textContent.replacingOccurrences(of: RegEx.normalize, with: " ")
-        } else {
-            return textContent
-        }
-    }
-
-    /**
      * Get the number of times a string $s appears in the node $e.
      *
      * @param DOMElement $e
@@ -1155,7 +1131,7 @@ public class Readability {
      * @return number (integer)
      **/
     public func getCharCount(_ e: Element, s: String = ",") -> Int {
-        return getInnerText(e).rangesOfString(s: s).count
+        return try! e.getInnerText().rangesOfString(s: s).count
     }
 
     /**
@@ -1181,11 +1157,11 @@ public class Readability {
      */
     public func getLinkDensity(_ e: Element) -> Float {
         let links = try! e.getElementsByTag("a")
-        let textLength = getInnerText(e).count
+        let textLength = try! e.getInnerText().count
         var linkLength = 0
 
         for link in links {
-            linkLength += getInnerText(link).count
+            linkLength += try! link.getInnerText().count
         }
 
         if textLength > 0 {
@@ -1346,7 +1322,7 @@ public class Readability {
                 }
 
                 let linkDensity = getLinkDensity(tag)
-                let contentLength = getInnerText(tag).count
+                let contentLength = try! tag.getInnerText().count
                 var toRemove = false
 
                 if lightClean {
