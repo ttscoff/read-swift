@@ -1280,25 +1280,34 @@ public class Readability {
         let isEmbed = (tag == "iframe" || tag == "object" || tag == "embed")
 
         for y in targetList {
-            /* Allow youtube and vimeo videos through as people usually want to see those. */
+            // Check if it's an iframe and if it contains YouTube or Vimeo in the src attribute.
             if isEmbed {
-                var attributeValues = ""
+                var srcAttribute = ""
 
-                for il in y.getAttributes()! {
-                    attributeValues = il.getValue() + "|" // DOMAttr?
+                // Extract the src attribute from attributes list
+                for attribute in y.getAttributes()! {
+                    if attribute.getKey() == "src" {
+                        srcAttribute = attribute.getValue()
+                        break
+                    }
                 }
 
-                /* First, check the elements attributes to see if any of them contain youtube or vimeo */
-                if attributeValues.matches(regexps["video"]!) {
+                // Regex pattern for allowed video domains
+                let videoSources = ["youtube.com", "vimeo.com"]
+                let isVideoSourceAllowed = videoSources.contains { srcAttribute.contains($0) }
+
+                // Allow if the source is a video from allowed domains
+                if isVideoSourceAllowed {
                     continue
                 }
 
-                /* Then check the elements inside this element for the same. */
+                // Then check if any inner HTML contains an allowed video domain.
                 if try! y.html().matches(regexps["video"]!) {
                     continue
                 }
             }
 
+            // Remove element if it does not match allowed criteria.
             try! y.parent()?.removeChild(y)
         }
     }
