@@ -935,10 +935,10 @@ public class Readability {
             var parentCurrentScore = Int(0)
             var grandParentCurrentScore = Int(0)
             if parentNode != nil {
-                parentCurrentScore = Int(try! parentNode!.attr("readability"))!
+                if let parent = parentNode, let readabilityAttr = try? parent.attr("readability"), let readabilityValue = readabilityAttr, let score = Int(readabilityValue) { parentCurrentScore = score }
             }
             if grandParentNode != nil {
-                grandParentCurrentScore = Int(try! grandParentNode!.attr("readability"))!
+                if let grandParent = grandParentNode, let readabilityAttr = try? grandParent.attr("readability"), let readabilityValue = readabilityAttr, let score = Int(readabilityValue) { grandParentCurrentScore = score }
             }
 
             parentCurrentScore += contentScore
