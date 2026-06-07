@@ -1149,13 +1149,12 @@ public class Readability {
      * @return string
      **/
     public func getInnerText(_ e: Element, normalizeSpaces: Bool = true) -> String {
-        var textContent = ""
-
-        if try! e.text() == "" {
+        let rawText = (try? e.text()) ?? ""
+        if rawText.isEmpty {
             return ""
         }
 
-        textContent = try! e.text().trimmingCharacters(in: .whitespacesAndNewlines)
+        let textContent = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if normalizeSpaces {
             return textContent.replacingOccurrences(of: regexps["normalize"]!, with: " ")
@@ -1206,7 +1205,7 @@ public class Readability {
         }
 
         if textLength > 0 {
-            return Float(linkLength / textLength)
+            return Float(linkLength) / Float(textLength)
         } else {
             return 0
         }
